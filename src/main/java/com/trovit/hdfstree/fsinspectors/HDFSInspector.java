@@ -19,6 +19,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -29,6 +30,13 @@ public class HDFSInspector implements FSInspector {
     try {
       Configuration conf = getHadoopConf();
       fs = FileSystem.get(conf);
+
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        try {
+          fs.close();
+        } catch (IOException ignore) {
+        }
+      }));
     } catch (Exception e) {
       System.out.println(e.getMessage());
       System.exit(1);
@@ -39,7 +47,7 @@ public class HDFSInspector implements FSInspector {
   public boolean isDirectory(String path) {
     boolean isDir = false;
     try {
-      isDir = fs.getFileStatus(new Path(path)).isDir();
+      isDir = fs.getFileStatus(new Path(path)).isDirectory();
     } catch (IOException e) {
       System.out.println(e.getMessage());
     }
@@ -78,13 +86,20 @@ public class HDFSInspector implements FSInspector {
 
   private Configuration getHadoopConf() throws Exception {
     Configuration conf = new Configuration();
-    String hadoop_home = System.getenv("HADOOP_HOME");
-    if (hadoop_home == null) {
+    String hadoopHome = System.getenv("HADOOP_HOME");
+    String confDir;
+    if (hadoopHome != null) {
+      confDir = hadoopHome + "/etc/hadoop/";
+    } else {
+      confDir = "/etc/hadoop/";
+    }
+    String hdfsSitePath = confDir+"hdfs-site.xml";
+    if (!new File(hdfsSitePath).exists()) {
       throw new Exception("HADOOP_HOME is not defined in the system.");
     }
-    conf.addResource(new Path(hadoop_home+"/conf/hdfs-site.xml"));
-    conf.addResource(new Path(hadoop_home+"/conf/mapred-site.xml"));
-    conf.addResource(new Path(hadoop_home+"/conf/core-site.xml"));
+    conf.addResource(new Path(hdfsSitePath));
+    conf.addResource(new Path(confDir+"mapred-site.xml"));
+    conf.addResource(new Path(confDir+"core-site.xml"));
     return conf;
   }
 }
