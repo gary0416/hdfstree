@@ -2,6 +2,7 @@
 ## Added
 - folder color is green (tree -C)
 - support files by -a (tree -a)
+- easy to switch multi cluster by using HADOOP_CONF_DIR env
 
 ## Changed
 - update hadoop version
